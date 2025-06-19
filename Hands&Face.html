@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hand + Face Tracking</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+      object-fit: cover;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 12px 18px;
+      font-size: 16px;
+      background: #222;
+      color: white;
+      border: 2px solid #555;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button.active {
+      background: #00ff88;
+      color: #111;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+    <div id="controls">
+      <button id="toggleFace">Enable Face Scan</button>
+      <button id="toggleHands">Enable Hand Scan</button>
+    </div>
+  </div>
+
+  <!-- MediaPipe Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Resize canvas dynamically to fit video size
+    function resizeCanvas() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+
+    const toggleFaceBtn = document.getElementById('toggleFace');
+    const toggleHandsBtn = document.getElementById('toggleHands');
+
+    let scanFace = false;
+    let scanHands = false;
+
+    toggleFaceBtn.onclick = () => {
+      scanFace = !scanFace;
+      toggleFaceBtn.classList.toggle('active', scanFace);
+      toggleFaceBtn.textContent = scanFace ? 'Disable Face Scan' : 'Enable Face Scan';
+    };
+
+    toggleHandsBtn.onclick = () => {
+      scanHands = !scanHands;
+      toggleHandsBtn.classList.toggle('active', scanHands);
+      toggleHandsBtn.textContent = scanHands ? 'Disable Hand Scan' : 'Enable Hand Scan';
+    };
+
+    // --------- MODELS ---------
+    const hands = new Hands({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+    hands.setOptions({
+      maxNumHands: 2,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.5
+    });
+
+    const faceMesh = new FaceMesh({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.5
+    });
+
+    let latestHandResults = null;
+    let latestFaceResults = null;
+
+    hands.onResults(results => {
+      latestHandResults = results;
+    });
+
+    faceMesh.onResults(results => {
+      latestFaceResults = results;
+    });
+
+    const camera = new Camera(video, {
+      onFrame: async () => {
+        if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+        resizeCanvas();
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (scanHands) {
+          await hands.send({ image: video });
+          if (latestHandResults?.multiHandLandmarks) {
+            for (const landmarks of latestHandResults.multiHandLandmarks) {
+              drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
+              drawLandmarks(ctx, landmarks, { color: '#FF0000', lineWidth: 2 });
+            }
+          }
+        }
+
+        if (scanFace) {
+          await faceMesh.send({ image: video });
+          if (latestFaceResults?.multiFaceLandmarks) {
+            for (const faceLandmarks of latestFaceResults.multiFaceLandmarks) {
+              drawConnectors(ctx, faceLandmarks, FACEMESH_TESSELATION, { color: '#8888FF', lineWidth: 0.5 });
+              drawConnectors(ctx, faceLandmarks, FACEMESH_RIGHT_EYE, { color: '#FF3030' });
+              drawConnectors(ctx, faceLandmarks, FACEMESH_LEFT_EYE, { color: '#30FF30' });
+              drawConnectors(ctx, faceLandmarks, FACEMESH_LIPS, { color: '#FFD700' });
+            }
+          }
+        }
+      },
+      width: 640,
+      height: 480
+    });
+
+    camera.start();
+  </script>
+</body>
+</html>
