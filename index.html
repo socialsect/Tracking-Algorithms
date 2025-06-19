@@ -2,148 +2,129 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- enable iOS safe‐area handling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Runner Vision: Hand + Face Tracker</title>
   <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-:root {
-  --bg: #fff;
-  --accent: #00ff88;
-  --accent-dark: #00cc6a;
-  --text: #0c0c0c;
-  --button-bg: rgba(0, 0, 0, 0.06);
-  --button-border: rgba(0, 0, 0, 0.15);
-  --button-hover: rgba(0, 255, 136, 0.2);
-}
+    :root {
+      --bg: #fff;
+      --accent: #00ff88;
+      --accent-dark: #00cc6a;
+      --text: #0c0c0c;
+      --button-bg: rgba(0, 0, 0, 0.06);
+      --button-border: rgba(0, 0, 0, 0.15);
+      --button-hover: rgba(0, 255, 136, 0.2);
+    }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      /* allow content to scroll if needed */
+      min-height: 100vh;
+      overflow-y: auto;
+    }
 
-body {
-  font-family: 'Poppins', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  overflow: hidden;
-  height: 100vh;
-}
+    #container {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      background: var(--bg);
+    }
 
-#container {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: var(--bg);
-}
+    video,
+    canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      transform: scaleX(-1);
+      z-index: 1;
+    }
 
-video, canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  transform: scaleX(-1);
-  z-index: 1;
-}
+    #controls {
+      position: fixed;
+      /* pin to bottom safe-area */
+      bottom: env(safe-area-inset-bottom, 20px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 10px 16px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      max-width: 95vw;
+      overflow-x: auto;
+    }
 
-#controls {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 10px 20px;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+    button {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      background: var(--button-bg);
+      color: var(--text);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
 
-button {
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  background: var(--button-bg);
-  color: var(--text);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  position: relative;
-  overflow: hidden;
-}
+    button:hover {
+      background: var(--button-hover);
+    }
 
-button:hover {
-  background: var(--button-hover);
-}
+    button.active {
+      background: var(--accent);
+      color: black;
+      font-weight: 600;
+    }
 
-button.active {
-  background: var(--accent);
-  color: black;
-  font-weight: 600;
-}
+    h1 {
+      position: absolute;
+      top: constant(safe-area-inset-top, 16px);
+      top: env(safe-area-inset-top, 16px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      z-index: 20;
+      color: var(--text);
+      background: rgba(255,255,255,0.7);
+      padding: 6px 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
 
-h1 {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 18px;
-  z-index: 20;
-  color: var(--text);
-  background: rgba(255,255,255,0.7);
-  padding: 6px 16px;
-  border-radius: 12px;
-  backdrop-filter: blur(8px);
-}
-
-/* Responsive tweaks */
-@media screen and (max-width: 600px) {
-  #controls {
-    flex-direction: column;
-    gap: 12px;
-    bottom: 20px;
-    padding: 12px;
-  }
-
-  button {
-    width: 80vw;
-    justify-content: center;
-    font-size: 15px;
-  }
-
-  h1 {
-    font-size: 16px;
-    padding: 5px 12px;
-  }
-}
-</style>
+    /* Responsive tweaks */
+    @media screen and (max-width: 600px) {
+      button {
+        font-size: 15px;
+        padding: 12px 20px;
+      }
+      #controls {
+        gap: 8px;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 16px;
+        padding: 5px 12px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1 style="text-align: center;color: #000; margin-bottom: 0;">Vinayaks HAND AND FACE TRACKING ALGORITHM</h1>
-  <!-- <header>
-    <!-- <div class="logo">
-      <div class="logo-icon">RV</div>
-      <h1>Runner Vision</h1>
-    </div> -->
-    <!-- <div class="status">
-      <span class="status-dot"></span>
-      <span>Camera Active</span>
-    </div> -->
-  <!-- </header> --> 
+  <h1>Vinayak’s Hand & Face Tracker</h1>
 
   <div id="container">
     <video id="video" autoplay playsinline></video>
@@ -151,27 +132,27 @@ h1 {
 
     <div id="controls">
       <button id="toggleFace">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- face icon -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="10" r="3"/>
-          <path d="M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
           <path d="M17 16.5a5 5 0 0 0-10 0"/>
           <path d="M12 2a10 10 0 0 0-8.2 15.7"/>
           <path d="M12 22a10 10 0 0 0 8.2-4.3"/>
         </svg>
         <span>Face Scan</span>
       </button>
+
       <button id="toggleHands">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- hand icon -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M2 12h20"/>
           <path d="M10 12v4a2 2 0 0 0 4 0v-4"/>
           <path d="M12 2v2"/>
           <path d="M12 20v2"/>
           <path d="m4.9 4.9 1.4 1.4"/>
           <path d="m17.7 17.7 1.4 1.4"/>
-          <path d="M2 12h1"/>
-          <path d="M21 12h1"/>
-          <path d="m19.1 4.9-1.4 1.4"/>
-          <path d="m6.3 17.7-1.4 1.4"/>
         </svg>
         <span>Hand Scan</span>
       </button>
@@ -187,65 +168,43 @@ h1 {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-
     const toggleFaceBtn = document.getElementById('toggleFace');
     const toggleHandsBtn = document.getElementById('toggleHands');
 
-    let scanFace = false;
-    let scanHands = false;
+    let scanFace = false, scanHands = false;
 
     toggleFaceBtn.onclick = () => {
       scanFace = !scanFace;
       toggleFaceBtn.classList.toggle('active', scanFace);
-      toggleFaceBtn.textContent = scanFace ? 'Disable Face Scan' : 'Enable Face Scan';
+      toggleFaceBtn.querySelector('span').textContent =
+        scanFace ? 'Disable Face Scan' : 'Enable Face Scan';
     };
 
     toggleHandsBtn.onclick = () => {
       scanHands = !scanHands;
       toggleHandsBtn.classList.toggle('active', scanHands);
-      toggleHandsBtn.textContent = scanHands ? 'Disable Hand Scan' : 'Enable Hand Scan';
+      toggleHandsBtn.querySelector('span').textContent =
+        scanHands ? 'Disable Hand Scan' : 'Enable Hand Scan';
     };
 
-    const hands = new Hands({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-    hands.setOptions({
-      maxNumHands: 2,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.5
-    });
+    const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+    hands.setOptions({ maxNumHands: 2, modelComplexity: 1,
+      minDetectionConfidence: 0.7, minTrackingConfidence: 0.5 });
+    const faceMesh = new FaceMesh({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
+    faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true,
+      minDetectionConfidence: 0.7, minTrackingConfidence: 0.5 });
 
-    const faceMesh = new FaceMesh({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
-    faceMesh.setOptions({
-      maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.5
-    });
-
-    let latestHandResults = null;
-    let latestFaceResults = null;
-
-    hands.onResults(results => { latestHandResults = results; });
-    faceMesh.onResults(results => { latestFaceResults = results; });
+    let latestHandResults = null, latestFaceResults = null;
+    hands.onResults(r => latestHandResults = r);
+    faceMesh.onResults(r => latestFaceResults = r);
 
     async function setupCamera() {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        },
+        video: { facingMode: 'user', width: 640, height: 480 },
         audio: false
       });
-
       video.srcObject = stream;
-
-      return new Promise(resolve => {
-        video.onloadedmetadata = () => {
-          video.play();
-          resolve();
-        };
-      });
+      return new Promise(r => video.onloadedmetadata = () => { video.play(); r(); });
     }
 
     function resizeCanvas() {
@@ -254,34 +213,26 @@ h1 {
     }
 
     async function loop() {
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        requestAnimationFrame(loop);
-        return;
-      }
-
+      if (!video.videoWidth) return requestAnimationFrame(loop);
       resizeCanvas();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (scanHands) {
         await hands.send({ image: video });
-        if (latestHandResults?.multiHandLandmarks) {
-          for (const landmarks of latestHandResults.multiHandLandmarks) {
-            drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
-            drawLandmarks(ctx, landmarks, { color: '#FF0000', lineWidth: 2 });
-          }
-        }
+        (latestHandResults?.multiHandLandmarks || []).forEach(landmarks => {
+          drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
+          drawLandmarks(ctx, landmarks, { color: '#FF0000', lineWidth: 2 });
+        });
       }
 
       if (scanFace) {
         await faceMesh.send({ image: video });
-        if (latestFaceResults?.multiFaceLandmarks) {
-          for (const faceLandmarks of latestFaceResults.multiFaceLandmarks) {
-            drawConnectors(ctx, faceLandmarks, FACEMESH_TESSELATION, { color: '#8888FF', lineWidth: 0.5 });
-            drawConnectors(ctx, faceLandmarks, FACEMESH_RIGHT_EYE, { color: '#FF3030' });
-            drawConnectors(ctx, faceLandmarks, FACEMESH_LEFT_EYE, { color: '#30FF30' });
-            drawConnectors(ctx, faceLandmarks, FACEMESH_LIPS, { color: '#FFD700' });
-          }
-        }
+        (latestFaceResults?.multiFaceLandmarks || []).forEach(f => {
+          drawConnectors(ctx, f, FACEMESH_TESSELATION, { color: '#8888FF', lineWidth: 0.5 });
+          drawConnectors(ctx, f, FACEMESH_RIGHT_EYE, { color: '#FF3030' });
+          drawConnectors(ctx, f, FACEMESH_LEFT_EYE, { color: '#30FF30' });
+          drawConnectors(ctx, f, FACEMESH_LIPS, { color: '#FFD700' });
+        });
       }
 
       requestAnimationFrame(loop);
